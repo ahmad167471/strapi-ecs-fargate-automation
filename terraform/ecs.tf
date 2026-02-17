@@ -2,7 +2,7 @@
 # ECR Repository
 ################################
 resource "aws_ecr_repository" "strapi" {
-  name = "strapi-ahmad"   # <-- updated name due to name conflict
+  name = "strapi-ahmad"
 }
 
 ################################
@@ -11,6 +11,10 @@ resource "aws_ecr_repository" "strapi" {
 resource "aws_db_subnet_group" "strapi_db_subnet" {
   name       = "strapi-db-subnet"
   subnet_ids = aws_subnet.public[*].id
+
+  tags = {
+    Name = "strapi-db-subnet"
+  }
 }
 
 resource "aws_db_instance" "strapi_db" {
@@ -30,7 +34,7 @@ resource "aws_db_instance" "strapi_db" {
     aws_security_group.sg
   ]
 }
-#try
+
 ################################
 # ECS Cluster
 ################################
@@ -50,14 +54,18 @@ resource "aws_ecs_task_definition" "strapi" {
 
   container_definitions = jsonencode([{
     name      = "strapi"
-    image     = "${aws_ecr_repository.strapi.repository_url}:latest"  # <-- points to new repo
+    image     = "${aws_ecr_repository.strapi.repository_url}:latest"
     essential = true
-    portMappings = [{ containerPort = 1337, hostPort = 1337, protocol = "tcp" }]
+    portMappings = [{
+      containerPort = 1337
+      hostPort      = 1337
+      protocol      = "tcp"
+    }]
     environment = [
-      { name = "DATABASE_CLIENT", value = "postgres" },
-      { name = "DATABASE_HOST", value = aws_db_instance.strapi_db.address },
-      { name = "DATABASE_PORT", value = "5432" },
-      { name = "DATABASE_NAME", value = "strapi_db" },
+      { name = "DATABASE_CLIENT",   value = "postgres" },
+      { name = "DATABASE_HOST",     value = aws_db_instance.strapi_db.address },
+      { name = "DATABASE_PORT",     value = "5432" },
+      { name = "DATABASE_NAME",     value = "strapi_db" },
       { name = "DATABASE_USERNAME", value = "strapiuser" },
       { name = "DATABASE_PASSWORD", value = var.strapi_db_password }
     ]

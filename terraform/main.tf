@@ -1,5 +1,19 @@
+################################
+# AWS Provider
+################################
 provider "aws" {
   region = var.aws_region
+}
+
+################################
+# Terraform Backend (S3)
+################################
+terraform {
+  backend "s3" {
+    bucket = "my-terraform-state-bucket"  # use the correct region bucket
+    key    = "strapi/terraform.tfstate"
+    region = "us-west-2"                 # match your S3 bucket region
+  }
 }
 
 ################################
@@ -42,6 +56,7 @@ resource "aws_security_group" "sg" {
   name   = "strapi-sg-${var.env}"
   vpc_id = aws_vpc.strapi_vpc.id
 
+  # Strapi App
   ingress {
     from_port   = 1337
     to_port     = 1337
@@ -49,6 +64,7 @@ resource "aws_security_group" "sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  # PostgreSQL
   ingress {
     from_port   = 5432
     to_port     = 5432
@@ -73,9 +89,32 @@ resource "aws_security_group" "sg" {
 ################################
 resource "aws_db_subnet_group" "strapi_db_subnet" {
   name       = "strapi-db-subnet-${var.env}"
-  subnet_ids = [aws_subnet.public[0].id, aws_subnet.public[1].id]
+  subnet_ids = [for s in aws_subnet.public : s.id]
 
   tags = {
     Name = "strapi-db-subnet-${var.env}"
   }
+}
+
+################################
+# RDS PostgreSQL
+################################
+resource "aws_db_instance" "strapi_db" {
+  allocated_storage      = 20
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = "db.t3.micro"
+  identifier             = "strapi-db-${var.env}"
+  username               = "strapiuser"
+  password               = var.strapi_db_password
+  db_name                = "strapi_db"
+  skip_final_snapshot    = true
+  publicly_accessible    = false
+
+  db_subnet_group_name   = aws_db_subnet_group.strapi_db_subnet.name
+  vpc_security_group_ids = [aws_security_group.sg.id]
+
+  depends_on = [
+    aws_db_subnet_group.strapi_db_subnet
+  ]
 }

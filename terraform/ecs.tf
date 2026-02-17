@@ -83,6 +83,7 @@ resource "aws_ecs_task_definition" "strapi" {
 
 ################################
 # ECS Service
+#fixed
 ################################
 resource "aws_ecs_service" "strapi_service" {
   name            = "strapi-service"

@@ -2,7 +2,7 @@
 # ECR Repository
 ################################
 resource "aws_ecr_repository" "strapi" {
-  name = "strapi-Ahmad"   # <-- updated name due to name conflict
+  name = "strapi-ahmad"   # <-- updated name due to name conflict
 }
 
 ################################

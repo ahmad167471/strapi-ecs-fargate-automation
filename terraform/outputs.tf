@@ -9,8 +9,3 @@ output "ecs_service_name" {
 output "rds_endpoint" {
   value = aws_db_instance.strapi_db.address
 }
-
-output "ecr_repository_url" {
-  value = aws_ecr_repository.strapi.repository_url
-}
-

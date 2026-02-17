@@ -30,7 +30,7 @@ resource "aws_db_instance" "strapi_db" {
     aws_security_group.sg
   ]
 }
-
+#try
 ################################
 # ECS Cluster
 ################################

@@ -29,6 +29,11 @@ jobs:
           docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/strapi-app:$IMAGE_TAG .
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/strapi-app:$IMAGE_TAG
 
+      - name: Install Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.2   # or your preferred version
+
       - name: Terraform Init
         run: terraform -chdir=terraform init
 

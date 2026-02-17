@@ -14,7 +14,7 @@ resource "aws_vpc" "strapi_vpc" {
   cidr_block = "10.0.0.0/16"
 
   tags = {
-    Name = "strapi-vpc"   #fix
+    Name = "strapi-vpc-${var.env}"
   }
 }
 
@@ -31,7 +31,7 @@ resource "aws_subnet" "public" {
   )
 
   tags = {
-    Name = "strapi-public-subnet-${count.index}"
+    Name = "strapi-public-subnet-${count.index}-${var.env}"
   }
 }
 
@@ -39,7 +39,7 @@ resource "aws_subnet" "public" {
 # Security Group
 ################################
 resource "aws_security_group" "sg" {
-  name   = "strapi-sg"
+  name   = "strapi-sg-${var.env}"
   vpc_id = aws_vpc.strapi_vpc.id
 
   ingress {
@@ -55,7 +55,6 @@ resource "aws_security_group" "sg" {
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"] # restrict in production
   }
-#Final
 
   egress {
     from_port   = 0
@@ -65,6 +64,18 @@ resource "aws_security_group" "sg" {
   }
 
   tags = {
-    Name = "strapi-sg"
+    Name = "strapi-sg-${var.env}"
+  }
+}
+
+################################
+# RDS DB Subnet Group
+################################
+resource "aws_db_subnet_group" "strapi_db_subnet" {
+  name       = "strapi-db-subnet-${var.env}"
+  subnet_ids = [aws_subnet.public[0].id, aws_subnet.public[1].id]
+
+  tags = {
+    Name = "strapi-db-subnet-${var.env}"
   }
 }

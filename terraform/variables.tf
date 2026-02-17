@@ -1,14 +1,18 @@
 variable "aws_region" {
-  default = "ap-south-1"
+  description = "AWS region to deploy resources"
+  type        = string
+  default     = "ap-south-1"
 }
 
 variable "aws_account_id" {
   description = "AWS account ID"
+  type        = string
 }
 
 variable "strapi_db_password" {
-  description = "RDS password"
-  default     = "StrapiPass123!"
+  description = "RDS PostgreSQL password"
+  type        = string
+  sensitive   = true
 }
 
 variable "image_tag" {

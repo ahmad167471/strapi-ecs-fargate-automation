@@ -1,7 +1,8 @@
 ################################
-# ECR Repository
+# ECR Repository (Data Source)
 ################################
-resource "aws_ecr_repository" "strapi" {
+# ECR is created in GitHub Actions
+data "aws_ecr_repository" "strapi" {
   name = "strapi-ahmad-app"
 }
 
@@ -18,16 +19,18 @@ resource "aws_db_subnet_group" "strapi_db_subnet" {
 }
 
 resource "aws_db_instance" "strapi_db" {
-  allocated_storage       = 20
-  engine                  = "postgres"
-  engine_version          = "15"
-  instance_class          = "db.t2.micro"
-  identifier              = "strapi-db"
-  username                = "strapiuser"
-  password                = var.strapi_db_password
-  skip_final_snapshot     = true
-  db_subnet_group_name    = aws_db_subnet_group.strapi_db_subnet.name
-  vpc_security_group_ids  = [aws_security_group.sg.id]
+  allocated_storage      = 20
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = "db.t3.micro"
+  identifier             = "strapi-db"
+  username               = "strapiuser"
+  password               = var.strapi_db_password
+  db_name                = "strapi_db"
+  skip_final_snapshot    = true
+  publicly_accessible    = true
+  db_subnet_group_name   = aws_db_subnet_group.strapi_db_subnet.name
+  vpc_security_group_ids = [aws_security_group.sg.id]
 
   depends_on = [
     aws_db_subnet_group.strapi_db_subnet,
@@ -54,13 +57,15 @@ resource "aws_ecs_task_definition" "strapi" {
 
   container_definitions = jsonencode([{
     name      = "strapi"
-    image     = "${aws_ecr_repository.strapi.repository_url}:latest"
+    image     = "${data.aws_ecr_repository.strapi.repository_url}:${var.image_tag}"
     essential = true
+
     portMappings = [{
       containerPort = 1337
       hostPort      = 1337
       protocol      = "tcp"
     }]
+
     environment = [
       { name = "DATABASE_CLIENT",   value = "postgres" },
       { name = "DATABASE_HOST",     value = aws_db_instance.strapi_db.address },

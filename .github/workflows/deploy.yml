@@ -32,10 +32,18 @@ jobs:
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.6.2   # or your preferred version
+          terraform_version: 1.6.2
 
       - name: Terraform Init
         run: terraform -chdir=terraform init
 
       - name: Terraform Apply
-        run: terraform -chdir=terraform apply -auto-approve
+        run: |
+          terraform -chdir=terraform apply -auto-approve \
+          -var="aws_account_id=${{ secrets.AWS_ACCOUNT_ID }}" \
+          -var="aws_region=us-east-1" \
+          -var="strapi_db_password=${{ secrets.STRAPI_DB_PASSWORD }}" \
+          -var="image_tag=${GITHUB_SHA}"
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

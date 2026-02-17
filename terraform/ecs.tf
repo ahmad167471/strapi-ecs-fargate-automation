@@ -1,13 +1,43 @@
 ################################
 # ECR Repository (Data Source)
-# ECR is created in GitHub Actions
 ################################
 data "aws_ecr_repository" "strapi" {
   name = "strapi-ahmad-app"
 }
 
 ################################
-# RDS PostgreSQL
+# IAM Role for ECS Task Execution
+################################
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "ecsTaskExecutionRole-strapi"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "ecs-tasks.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
+################################
+# CloudWatch Logs
+################################
+resource "aws_cloudwatch_log_group" "strapi_logs" {
+  name              = "/ecs/strapi"
+  retention_in_days = 7
+}
+
+################################
+# RDS Subnet Group
 ################################
 resource "aws_db_subnet_group" "strapi_db_subnet" {
   name       = "strapi-db-subnet"
@@ -18,6 +48,9 @@ resource "aws_db_subnet_group" "strapi_db_subnet" {
   }
 }
 
+################################
+# RDS PostgreSQL
+################################
 resource "aws_db_instance" "strapi_db" {
   allocated_storage      = 20
   engine                 = "postgres"
@@ -28,16 +61,13 @@ resource "aws_db_instance" "strapi_db" {
   password               = var.strapi_db_password
   db_name                = "strapi_db"
   skip_final_snapshot    = true
-
-  #  FIXED: Database should NOT be public
   publicly_accessible    = false
 
   db_subnet_group_name   = aws_db_subnet_group.strapi_db_subnet.name
   vpc_security_group_ids = [aws_security_group.sg.id]
 
   depends_on = [
-    aws_db_subnet_group.strapi_db_subnet,
-    aws_security_group.sg
+    aws_db_subnet_group.strapi_db_subnet
   ]
 }
 
@@ -57,6 +87,7 @@ resource "aws_ecs_task_definition" "strapi" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([{
     name      = "strapi"
@@ -65,7 +96,6 @@ resource "aws_ecs_task_definition" "strapi" {
 
     portMappings = [{
       containerPort = 1337
-      hostPort      = 1337
       protocol      = "tcp"
     }]
 
@@ -77,10 +107,20 @@ resource "aws_ecs_task_definition" "strapi" {
       { name = "DATABASE_USERNAME", value = "strapiuser" },
       { name = "DATABASE_PASSWORD", value = var.strapi_db_password }
     ]
+
+    logConfiguration = {
+      logDriver = "awslogs"
+      options = {
+        awslogs-group         = aws_cloudwatch_log_group.strapi_logs.name
+        awslogs-region        = var.aws_region
+        awslogs-stream-prefix = "ecs"
+      }
+    }
   }])
 
   depends_on = [
-    aws_db_instance.strapi_db
+    aws_db_instance.strapi_db,
+    aws_iam_role_policy_attachment.ecs_task_execution_policy
   ]
 }
 

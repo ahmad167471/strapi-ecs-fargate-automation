@@ -18,7 +18,7 @@ resource "aws_db_instance" "strapi_db" {
   engine                  = "postgres"
   engine_version          = "15.3"
   instance_class          = "db.t2.micro"
-  name                    = "strapi_db"                # Fixed database name
+  identifier              = "strapi_db"         # Fixed database name to identifier
   username                = "strapiuser"
   password                = var.strapi_db_password
   skip_final_snapshot     = true

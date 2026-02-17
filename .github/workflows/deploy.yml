@@ -26,14 +26,14 @@ jobs:
 
       - name: Create ECR repository if not exists
         run: |
-          aws ecr describe-repositories --repository-names strapi-ahmad || \
-          aws ecr create-repository --repository-name strapi-ahmad
+          aws ecr describe-repositories --repository-names strapi-ahmad-app || \
+          aws ecr create-repository --repository-name strapi-ahmad-app
 
       - name: Build and push Docker image
         run: |
           IMAGE_TAG=${GITHUB_SHA}
-          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/strapi-ahmad:$IMAGE_TAG .
-          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/strapi-ahmad:$IMAGE_TAG
+          docker build -t ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/strapi-ahmad-app:$IMAGE_TAG .
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-south-1.amazonaws.com/strapi-ahmad-app:$IMAGE_TAG
 
       - name: Install Terraform
         uses: hashicorp/setup-terraform@v2

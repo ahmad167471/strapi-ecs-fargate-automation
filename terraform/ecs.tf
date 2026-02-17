@@ -2,7 +2,7 @@
 # ECR Repository
 ################################
 resource "aws_ecr_repository" "strapi" {
-  name = "strapi-ahmad"
+  name = "strapi-ahmad-app"
 }
 
 ################################
@@ -20,7 +20,7 @@ resource "aws_db_subnet_group" "strapi_db_subnet" {
 resource "aws_db_instance" "strapi_db" {
   allocated_storage       = 20
   engine                  = "postgres"
-  engine_version          = "15.3"
+  engine_version          = "15"
   instance_class          = "db.t2.micro"
   identifier              = "strapi-db"
   username                = "strapiuser"

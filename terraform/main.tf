@@ -6,17 +6,6 @@ provider "aws" {
 }
 
 ################################
-# Terraform Backend (S3)
-################################
-terraform {
-  backend "s3" {
-    bucket = "my-terraform-state-bucket"  # use the correct region bucket
-    key    = "strapi/terraform.tfstate"
-    region = "us-west-2"                 # match your S3 bucket region
-  }
-}
-
-################################
 # Availability Zones Data
 ################################
 data "aws_availability_zones" "available" {}

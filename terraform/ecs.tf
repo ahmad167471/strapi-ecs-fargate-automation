@@ -46,6 +46,11 @@ resource "aws_db_subnet_group" "strapi_db_subnet" {
   tags = {
     Name = "strapi-db-subnet"
   }
+
+  lifecycle {
+    prevent_destroy = false
+    ignore_changes  = [name]
+  }
 }
 
 ################################

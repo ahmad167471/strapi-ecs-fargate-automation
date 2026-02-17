@@ -1,7 +1,7 @@
 ################################
 # ECR Repository (Data Source)
-################################
 # ECR is created in GitHub Actions
+################################
 data "aws_ecr_repository" "strapi" {
   name = "strapi-ahmad-app"
 }
@@ -28,7 +28,10 @@ resource "aws_db_instance" "strapi_db" {
   password               = var.strapi_db_password
   db_name                = "strapi_db"
   skip_final_snapshot    = true
-  publicly_accessible    = true
+
+  #  FIXED: Database should NOT be public
+  publicly_accessible    = false
+
   db_subnet_group_name   = aws_db_subnet_group.strapi_db_subnet.name
   vpc_security_group_ids = [aws_security_group.sg.id]
 
@@ -83,7 +86,6 @@ resource "aws_ecs_task_definition" "strapi" {
 
 ################################
 # ECS Service
-#fixed
 ################################
 resource "aws_ecs_service" "strapi_service" {
   name            = "strapi-service"

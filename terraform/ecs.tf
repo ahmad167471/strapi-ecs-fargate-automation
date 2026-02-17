@@ -2,7 +2,7 @@
 # ECR Repository
 ################################
 resource "aws_ecr_repository" "strapi" {
-  name = "strapi-app"
+  name = "strapi-Ahmad"   # <-- updated name due to name conflict
 }
 
 ################################
@@ -18,14 +18,13 @@ resource "aws_db_instance" "strapi_db" {
   engine                  = "postgres"
   engine_version          = "15.3"
   instance_class          = "db.t2.micro"
-  identifier              = "strapi-db"         # Fixed database name to identifier
+  identifier              = "strapi-db"
   username                = "strapiuser"
   password                = var.strapi_db_password
   skip_final_snapshot     = true
   db_subnet_group_name    = aws_db_subnet_group.strapi_db_subnet.name
   vpc_security_group_ids  = [aws_security_group.sg.id]
 
-  # Ensure RDS is created after SG & subnet
   depends_on = [
     aws_db_subnet_group.strapi_db_subnet,
     aws_security_group.sg
@@ -51,14 +50,14 @@ resource "aws_ecs_task_definition" "strapi" {
 
   container_definitions = jsonencode([{
     name      = "strapi"
-    image     = "${aws_ecr_repository.strapi.repository_url}:latest"
+    image     = "${aws_ecr_repository.strapi.repository_url}:latest"  # <-- points to new repo
     essential = true
     portMappings = [{ containerPort = 1337, hostPort = 1337, protocol = "tcp" }]
     environment = [
       { name = "DATABASE_CLIENT", value = "postgres" },
       { name = "DATABASE_HOST", value = aws_db_instance.strapi_db.address },
       { name = "DATABASE_PORT", value = "5432" },
-      { name = "DATABASE_NAME", value = "strapi_db" },   # Fixed
+      { name = "DATABASE_NAME", value = "strapi_db" },
       { name = "DATABASE_USERNAME", value = "strapiuser" },
       { name = "DATABASE_PASSWORD", value = var.strapi_db_password }
     ]

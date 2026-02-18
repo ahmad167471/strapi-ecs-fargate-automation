@@ -2,7 +2,7 @@
 # ECR Repository (Data Source)
 ################################
 data "aws_ecr_repository" "strapi" {
-  name = "strapi-ahmad-app"
+  name = "strapi-ahmad-app"  # Make sure this matches the existing repo in your AWS account
 }
 
 ################################
@@ -30,7 +30,7 @@ resource "aws_ecs_task_definition" "strapi" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  
+
   # Use existing role for both execution and task roles
   execution_role_arn = var.ecs_task_role_arn
   task_role_arn      = var.ecs_task_role_arn
@@ -54,7 +54,7 @@ resource "aws_ecs_task_definition" "strapi" {
       { name = "DATABASE_PASSWORD", value = var.strapi_db_password }
     ]
 
-    # logConfiguration removed
+    # Removed logConfiguration to bypass CloudWatch permission issue
   }])
 
   depends_on = [

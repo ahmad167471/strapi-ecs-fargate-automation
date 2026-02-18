@@ -147,27 +147,3 @@ resource "aws_db_instance" "strapi_db" {
     aws_db_subnet_group.strapi_db_subnet
   ]
 }
-
-
-################################
-# RDS PostgreSQL
-################################
-resource "aws_db_instance" "strapi_db" {
-  allocated_storage      = 20
-  engine                 = "postgres"
-  engine_version         = "15"
-  instance_class         = "db.t3.micro"
-  identifier             = "strapi-db-${var.env}"
-  username               = "strapiuser"
-  password               = var.strapi_db_password
-  db_name                = "strapi_db"
-  skip_final_snapshot    = true
-  publicly_accessible    = false
-
-  db_subnet_group_name   = aws_db_subnet_group.strapi_db_subnet.name
-  vpc_security_group_ids = [aws_security_group.sg.id]
-
-  depends_on = [
-    aws_db_subnet_group.strapi_db_subnet
-  ]
-}

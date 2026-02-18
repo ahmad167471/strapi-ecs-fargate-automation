@@ -1,53 +1,64 @@
+################################
+# AWS Provider
+################################
 provider "aws" {
-  region = "us-east-1"
+  region = var.aws_region
 }
 
-############################
-# VPC
-############################
+################################
+# Availability Zones Data
+################################
+data "aws_availability_zones" "available" {}
 
-resource "aws_vpc" "ecs_vpc" {
+################################
+# VPC & Subnets
+################################
+resource "aws_vpc" "strapi_vpc" {
   cidr_block = "10.0.0.0/16"
-}
 
-resource "aws_internet_gateway" "igw" {
-  vpc_id = aws_vpc.ecs_vpc.id
-}
-
-resource "aws_subnet" "public_subnet_1" {
-  vpc_id                  = aws_vpc.ecs_vpc.id
-  cidr_block              = "10.0.1.0/24"
-  availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = true
-}
-
-resource "aws_route_table" "public_rt" {
-  vpc_id = aws_vpc.ecs_vpc.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw.id
+  tags = {
+    Name = "strapi-vpc-${var.env}"
   }
 }
 
-resource "aws_route_table_association" "public_assoc" {
-  subnet_id      = aws_subnet.public_subnet_1.id
-  route_table_id = aws_route_table.public_rt.id
+resource "aws_subnet" "public" {
+  count                   = 2
+  vpc_id                  = aws_vpc.strapi_vpc.id
+  map_public_ip_on_launch = true
+
+  cidr_block = cidrsubnet(aws_vpc.strapi_vpc.cidr_block, 8, count.index)
+
+  availability_zone = element(
+    data.aws_availability_zones.available.names,
+    count.index
+  )
+
+  tags = {
+    Name = "strapi-public-subnet-${count.index}-${var.env}"
+  }
 }
 
-############################
+################################
 # Security Group
-############################
+################################
+resource "aws_security_group" "sg" {
+  name   = "strapi-sg-${var.env}"
+  vpc_id = aws_vpc.strapi_vpc.id
 
-resource "aws_security_group" "ecs_sg" {
-  name   = "ecs-sg"
-  vpc_id = aws_vpc.ecs_vpc.id
-
+  # Strapi App
   ingress {
     from_port   = 1337
     to_port     = 1337
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  # PostgreSQL
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # restrict in production
   }
 
   egress {
@@ -56,85 +67,43 @@ resource "aws_security_group" "ecs_sg" {
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-}
 
-############################
-# ECS Cluster
-############################
-
-resource "aws_ecs_cluster" "cluster" {
-  name = "strapi-cluster"
-}
-
-############################
-# IAM Role for ECS Task
-############################
-
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-      Action = "sts:AssumeRole"
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_exec_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-############################
-# Task Definition
-############################
-
-resource "aws_ecs_task_definition" "task" {
-  family                   = "strapi-task"
-  requires_compatibilities = ["FARGATE"]
-  network_mode             = "awsvpc"
-  cpu                      = "256"
-  memory                   = "512"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-
-  container_definitions = jsonencode([
-    {
-      name      = "strapi"
-      image     = "yourdockerhubusername/strapi:latest"
-      essential = true
-      portMappings = [
-        {
-          containerPort = 1337
-          hostPort      = 1337
-        }
-      ]
-    }
-  ])
-}
-
-############################
-# ECS Service
-############################
-
-resource "aws_ecs_service" "service" {
-  name            = "strapi-service"
-  cluster         = aws_ecs_cluster.cluster.id
-  task_definition = aws_ecs_task_definition.task.arn
-  launch_type     = "FARGATE"
-  desired_count   = 1
-
-  network_configuration {
-    subnets          = [aws_subnet.public_subnet_1.id]
-    security_groups  = [aws_security_group.ecs_sg.id]
-    assign_public_ip = true
+  tags = {
+    Name = "strapi-sg-${var.env}"
   }
+}
+
+################################
+# RDS DB Subnet Group
+################################
+resource "aws_db_subnet_group" "strapi_db_subnet" {
+  name       = "strapi-db-subnet-${var.env}"
+  subnet_ids = [for s in aws_subnet.public : s.id]
+
+  tags = {
+    Name = "strapi-db-subnet-${var.env}"
+  }
+}
+
+################################
+# RDS PostgreSQL
+################################
+resource "aws_db_instance" "strapi_db" {
+  allocated_storage      = 20
+  engine                 = "postgres"
+  engine_version         = "15"
+  instance_class         = "db.t3.micro"
+  identifier             = "strapi-db-${var.env}"
+  username               = "strapiuser"
+  password               = var.strapi_db_password
+  db_name                = "strapi_db"
+  skip_final_snapshot    = true
+  publicly_accessible    = false
+
+  db_subnet_group_name   = aws_db_subnet_group.strapi_db_subnet.name
+  vpc_security_group_ids = [aws_security_group.sg.id]
 
   depends_on = [
-    aws_iam_role_policy_attachment.ecs_task_exec_policy
+    aws_db_subnet_group.strapi_db_subnet
   ]
 }

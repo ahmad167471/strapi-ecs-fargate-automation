@@ -15,14 +15,6 @@ variable "ecs_task_role_arn" {
 }
 
 ################################
-# CloudWatch Logs
-################################
-resource "aws_cloudwatch_log_group" "strapi_logs" {
-  name              = "/ecs/strapi-${var.env}"
-  retention_in_days = 7
-}
-
-################################
 # ECS Cluster
 ################################
 resource "aws_ecs_cluster" "strapi_cluster" {
@@ -62,14 +54,7 @@ resource "aws_ecs_task_definition" "strapi" {
       { name = "DATABASE_PASSWORD", value = var.strapi_db_password }
     ]
 
-    logConfiguration = {
-      logDriver = "awslogs"
-      options = {
-        awslogs-group         = aws_cloudwatch_log_group.strapi_logs.name
-        awslogs-region        = var.aws_region
-        awslogs-stream-prefix = "ecs"
-      }
-    }
+    # logConfiguration removed
   }])
 
   depends_on = [
@@ -80,7 +65,6 @@ resource "aws_ecs_task_definition" "strapi" {
 ################################
 # ECS Service
 ################################
-#fix
 resource "aws_ecs_service" "strapi_service" {
   name            = "strapi-service-${var.env}"
   cluster         = aws_ecs_cluster.strapi_cluster.id

@@ -80,6 +80,7 @@ resource "aws_ecs_task_definition" "strapi" {
 ################################
 # ECS Service
 ################################
+#fix
 resource "aws_ecs_service" "strapi_service" {
   name            = "strapi-service-${var.env}"
   cluster         = aws_ecs_cluster.strapi_cluster.id

@@ -188,6 +188,7 @@ resource "aws_db_subnet_group" "strapi_db_subnet" {
 ################################
 # RDS PostgreSQL
 ################################
+#fixed
 resource "aws_db_instance" "strapi_db" {
   identifier              = "strapi-db-${var.env}"
   engine                  = "postgres"

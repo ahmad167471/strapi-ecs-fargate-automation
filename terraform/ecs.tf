@@ -11,7 +11,7 @@ data "aws_ecr_repository" "strapi" {
 variable "ecs_task_role_arn" {
   description = "IAM Role ARN for ECS Task"
   type        = string
-  default     = "arn:aws:iam::811738710312:role/ecs_fargate_taskRole"
+  default     = "arn:aws:iam::373317459749:role/ecs_fargate_execution_minimal"
 }
 
 ################################

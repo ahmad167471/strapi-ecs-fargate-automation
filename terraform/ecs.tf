@@ -6,30 +6,7 @@ data "aws_ecr_repository" "strapi" {
 }
 
 ################################
-# IAM Role for ECS Task Execution
-################################
-resource "aws_iam_role" "ecs_task_execution_role" {
-  name = "ecsTaskExecutionRole-strapi-${var.env}"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action    = "sts:AssumeRole"
-      Effect    = "Allow"
-      Principal = {
-        Service = "ecs-tasks.amazonaws.com"
-      }
-    }]
-  })
-}
-
-resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
-  role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-################################
-# IAM Role for ECS Task (Application Access)
+# IAM Role ARN for ECS Task (Use Existing)
 ################################
 variable "ecs_task_role_arn" {
   description = "IAM Role ARN for ECS Task"
@@ -61,8 +38,10 @@ resource "aws_ecs_task_definition" "strapi" {
   requires_compatibilities = ["FARGATE"]
   cpu                      = "512"
   memory                   = "1024"
-  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
-  task_role_arn            = var.ecs_task_role_arn
+  
+  # Use existing role for both execution and task roles
+  execution_role_arn = var.ecs_task_role_arn
+  task_role_arn      = var.ecs_task_role_arn
 
   container_definitions = jsonencode([{
     name      = "strapi"
@@ -94,8 +73,7 @@ resource "aws_ecs_task_definition" "strapi" {
   }])
 
   depends_on = [
-    aws_db_instance.strapi_db,
-    aws_iam_role_policy_attachment.ecs_task_execution_policy
+    aws_db_instance.strapi_db
   ]
 }
 
